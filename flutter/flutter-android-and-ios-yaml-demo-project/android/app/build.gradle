@@ -1,80 +1,57 @@
-def localProperties = new Properties()
-def localPropertiesFile = rootProject.file('local.properties')
-if (localPropertiesFile.exists()) {
-    localPropertiesFile.withReader('UTF-8') { reader ->
-        localProperties.load(reader)
-    }
+
+// app/build.gradle — module-level Gradle using declarative plugins
+// Docs: https://docs.flutter.dev/release/breaking-changes/flutter-gradle-plugin-apply
+
+// Apply Android + Kotlin + Flutter Gradle plugins declaratively
+plugins {
+    id "com.android.application"
+    id "org.jetbrains.kotlin.android"
+    // The Flutter Gradle Plugin must be applied after Android & Kotlin plugins:
+    id "dev.flutter.flutter-gradle-plugin"
 }
 
-def flutterRoot = localProperties.getProperty('flutter.sdk')
-if (flutterRoot == null) {
-    throw new GradleException("Flutter SDK not found. Define location with flutter.sdk in the local.properties file.")
-}
-
-def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
-if (flutterVersionCode == null) {
-    flutterVersionCode = '1'
-}
-
-def flutterVersionName = localProperties.getProperty('flutter.versionName')
-if (flutterVersionName == null) {
-    flutterVersionName = '1.0'
-}
-
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
-apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
-
-def keystoreProperties = new Properties()
-def keystorePropertiesFile = rootProject.file('key.properties')
-if (keystorePropertiesFile.exists()) {
-    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-}
-
+// --- Android configuration ---
 android {
-    compileSdkVersion 30
-
-    sourceSets {
-        main.java.srcDirs += 'src/main/kotlin'
-    }
+    namespace "com.example.codemagic_demo"    // 👈 you can keep or customize
+    compileSdk flutter.compileSdkVersion
+    ndkVersion flutter.ndkVersion
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId "io.codemagic.flutteryaml"
-        minSdkVersion 16
-        targetSdkVersion 30
-        versionCode flutterVersionCode.toInteger()
-        versionName flutterVersionName
+        applicationId "com.example.codemagic_demo"  // 👈 customize if you wish
+        minSdk 23                                    // OK for most Flutter apps; match your project
+        targetSdk flutter.targetSdkVersion
+
+        // Versions driven by Flutter tool (or set explicitly if preferred)
+        versionCode flutter.versionCode
+        versionName flutter.versionName
     }
 
- signingConfigs {
-        release {
-            if (System.getenv()["CI"]) { // CI=true is exported by Codemagic
-                storeFile file(System.getenv()["CM_KEYSTORE_PATH"])
-                storePassword System.getenv()["CM_KEYSTORE_PASSWORD"]
-                keyAlias System.getenv()["CM_KEY_ALIAS"]
-                keyPassword System.getenv()["CM_KEY_PASSWORD"]
-            } else {
-                storeFile file("/path/to/local/myreleasekey.keystore")
-                storePassword System.getenv()["KEYSTORE_PASSWORD"]
-                keyAlias System.getenv()["KEY_ALIAS_USERNAME"]
-                keyPassword System.getenv()["KEY_ALIAS_PASSWORD"]
-            }
-        }
+    // Java/Kotlin options
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = JavaVersion.VERSION_1_8
     }
 
     buildTypes {
         release {
-
-            signingConfig signingConfigs.release
+            // For quick tests in release, debug signing is used (replace with a proper keystore later)
+            signingConfig = signingConfigs.debug
+            // You can add proguard/r8 rules here as needed
         }
     }
 }
 
+// --- Flutter source mapping ---
 flutter {
-    source '../..'
+    // Points to the Flutter project root relative to this module
+    source = "../.."
 }
 
+// (Optional) Dependencies: keep minimal for your current app.
+// If you later add libraries, declare them here.
 dependencies {
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib"
 }
